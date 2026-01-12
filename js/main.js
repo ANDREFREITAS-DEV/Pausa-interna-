@@ -218,4 +218,179 @@ function onBackToDump() {
 ========================= */
 function onPickClarity(answer) {
   if (!app.flow) return;
-  app.flow
+  app.flow.clarity_answer = answer;
+  app.ui.renderClarity(app.flow);
+}
+
+function onClarityNext() {
+  if (!app.flow || !app.flow.clarity_answer) return;
+  app.ui.renderPause(app.flow);
+  app.ui.showScreen(SCREENS.PAUSE);
+}
+
+function onBackToClarity() {
+  if (!app.flow) return;
+  app.ui.showScreen(SCREENS.CLARITY);
+}
+
+/* =========================
+   MICRO-PAUSA
+========================= */
+function onPickPause(pause) {
+  if (!app.flow) return;
+  app.flow.micro_pause = pause;
+  app.ui.renderPause(app.flow);
+}
+
+function onPauseNext() {
+  if (!app.flow || !app.flow.micro_pause) return;
+
+  if (app.flow.micro_pause === "respirar") {
+    startTimer(60, "Inspire… solte… só acompanha.");
+    return;
+  }
+
+  if (app.flow.micro_pause === "pausa") {
+    startTimer(120, "Só fique aqui. Sem tarefa.");
+    return;
+  }
+
+  app.ui.showScreen(SCREENS.PAUSE_DONE);
+}
+
+function startTimer(seconds, text) {
+  stopTimer();
+
+  app.timer.total = seconds;
+  app.timer.remaining = seconds;
+  app.timer.text = text;
+  app.timer.running = true;
+
+  app.ui.renderTimer({
+    totalSeconds: seconds,
+    remainingSeconds: seconds,
+    text
+  });
+
+  app.ui.showScreen(SCREENS.TIMER);
+
+  app.timer.id = setInterval(() => {
+    app.timer.remaining--;
+
+    if (app.timer.remaining <= 0) {
+      stopTimer();
+      app.ui.showScreen(SCREENS.PAUSE_DONE);
+    } else {
+      app.ui.updateTimer({
+        totalSeconds: app.timer.total,
+        remainingSeconds: app.timer.remaining
+      });
+    }
+  }, 1000);
+}
+
+function onEndTimer() {
+  stopTimer();
+  app.ui.showScreen(SCREENS.PAUSE_DONE);
+}
+
+function stopTimer() {
+  if (app.timer.id) clearInterval(app.timer.id);
+  app.timer.id = null;
+  app.timer.running = false;
+}
+
+/* =========================
+   FINALIZAÇÃO
+========================= */
+function onPauseDoneNext() {
+  app.ui.showScreen(SCREENS.FINISH);
+}
+
+function finalizeAndSave() {
+  if (!app.flow) return;
+
+  storage.add({
+    id: app.flow.id,
+    created_at: app.flow.created_at,
+    intensity: app.flow.intensity,
+    theme: app.flow.theme,
+    text: app.flow.text,
+    clarity_answer: app.flow.clarity_answer,
+    micro_pause: app.flow.micro_pause,
+    deleted: false
+  });
+
+  app.flow = null;
+}
+
+function onFinishClose() {
+  finalizeAndSave();
+  goHome();
+}
+
+function onFinishHistory() {
+  finalizeAndSave();
+  goHistory();
+}
+
+/* =========================
+   HISTÓRICO / DETALHE
+========================= */
+function onOpenDetail(id) {
+  app.currentDetailId = id;
+  const record = storage.getById(id);
+  app.ui.renderDetail(record);
+  app.ui.showScreen(SCREENS.DETAIL);
+}
+
+function onBackToHistory() {
+  app.currentDetailId = null;
+  goHistory();
+}
+
+async function onCopySummary() {
+  if (!app.currentDetailId) return;
+  const record = storage.getById(app.currentDetailId);
+  if (!record) return;
+
+  const text = buildTherapySummary(record);
+
+  try {
+    await navigator.clipboard.writeText(text);
+    app.ui.toast("Resumo copiado.");
+  } catch {
+    alert(text);
+  }
+}
+
+function onRequestDeleteCurrent() {
+  if (!app.currentDetailId) return;
+
+  app.ui.openConfirmModal({
+    title: "Deletar check-in?",
+    message: "Esse registro será removido deste dispositivo.",
+    confirmLabel: "Deletar",
+    cancelLabel: "Cancelar",
+    danger: true,
+    onConfirm: () => {
+      storage.remove(app.currentDetailId);
+      app.currentDetailId = null;
+      goHistory();
+    }
+  });
+}
+
+function onRequestClearAllData() {
+  app.ui.openConfirmModal({
+    title: "Limpar dados?",
+    message: "Isso apaga todo o histórico local.",
+    confirmLabel: "Apagar tudo",
+    cancelLabel: "Cancelar",
+    danger: true,
+    onConfirm: () => {
+      storage.clearAll();
+      goHistory();
+    }
+  });
+}
