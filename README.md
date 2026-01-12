@@ -1,4 +1,3 @@
-# Pausa-interna-
 # Pausa Interna (PWA Offline-first)
 
 Um app simples (sem frameworks) para organizar pensamentos e emoções com gentileza.

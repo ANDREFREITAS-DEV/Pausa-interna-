@@ -1,7 +1,7 @@
 :root{
   --bg: #0B1220;
   --card: #0F172A;
-  --muted: rgba(255,255,255,.72);
+  --muted: rgba(255,255,255,.80);
   --text: rgba(255,255,255,.92);
   --soft: rgba(255,255,255,.08);
   --soft2: rgba(255,255,255,.12);
@@ -403,6 +403,13 @@ body{
   line-height: 1.4;
 }
 
+.item-title,
+.item-meta{
+  color: rgba(255,255,255,.92);
+  font-weight: 600;
+}
+
+
 .detail{
   margin-top: 10px;
   padding: 12px 12px;
@@ -426,6 +433,36 @@ body{
   line-height: 1.45;
   white-space: pre-wrap;
 }
+
+/* ===== Detalhe atual (renderDetail do ui.js) ===== */
+
+#detailBody{
+  color: #ffffff;
+}
+
+#detailBody .detail-row{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+}
+
+#detailBody .label{
+  color: rgba(255,255,255,.78);
+  font-size: 12px;
+}
+
+#detailBody .value{
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Texto longo do descarrego */
+#detailBody .detail-block .value{
+  white-space: pre-wrap;
+  color: #ffffff;
+}
+
 
 .empty{
   margin-top: 14px;
@@ -522,6 +559,14 @@ button:focus-visible, a:focus-visible, input:focus-visible{
   outline-offset: 2px;
   border-radius: 14px;
 }
+
+button:focus,
+a:focus,
+input:focus{
+  outline: var(--focus);
+  outline-offset: 2px;
+}
+
 
 /* Larger screens */
 @media (min-width: 560px){
