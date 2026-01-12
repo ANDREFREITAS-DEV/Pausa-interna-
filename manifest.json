@@ -1,0 +1,17 @@
+{
+  "name": "Pausa Interna",
+  "short_name": "Pausa Interna",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B1220",
+  "theme_color": "#0F172A",
+  "description": "Um espaço simples para organizar o que está dentro, com calma. Offline-first.",
+  "icons": [
+    {
+      "src": "/assets/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
