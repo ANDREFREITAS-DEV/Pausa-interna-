@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0F172A" />
+  <meta name="description" content="Pausa Interna — um espaço simples para organizar pensamentos e emoções, com calma. Offline-first." />
+
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./assets/icon.svg" />
+
+  <link rel="stylesheet" href="./styles.css" />
+  <title>Pausa Interna</title>
+</head>
+
+<body>
+  <a class="skip-link" href="#app">Pular para o conteúdo</a>
+
+  <div id="app" class="app" aria-live="polite">
+    <header class="topbar">
+      <div class="brand" aria-label="Pausa Interna">
+        <span class="brand-dot" aria-hidden="true"></span>
+        <span class="brand-name">Pausa Interna</span>
+      </div>
+
+      <button id="btnHowTop" class="ghost-btn" type="button" aria-label="Como funciona">
+        Como funciona
+      </button>
+    </header>
+
+    <main class="main">
+      <!-- Toast -->
+      <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+      <!-- HOME -->
+      <section class="screen" data-screen="home" aria-labelledby="homeTitle">
+        <div class="card">
+          <h1 id="homeTitle" class="title">Pausa Interna</h1>
+          <p class="subtitle">Um espaço simples para organizar o que está dentro, com calma.</p>
+
+          <p class="body">Você não precisa estar bem para começar.</p>
+
+          <div class="actions">
+            <button id="btnStart" class="primary-btn" type="button">Começar</button>
+            <button id="btnHowHome" class="secondary-btn" type="button">Como funciona</button>
+          </div>
+
+          <p class="safety">
+            Não substitui terapia. Em caso de crise, procure ajuda imediata.
+          </p>
+        </div>
+      </section>
+
+      <!-- CHECK-IN -->
+      <section class="screen" data-screen="checkin" aria-labelledby="checkinTitle" hidden>
+        <div class="card">
+          <h1 id="checkinTitle" class="title">Como você está agora?</h1>
+          <p class="help">Escolha o que mais parece verdade neste momento.</p>
+
+          <div class="segmented" role="group" aria-label="Intensidade do momento">
+            <button class="chip" type="button" data-intensity="leve">Leve</button>
+            <button class="chip" type="button" data-intensity="neutro">Neutro</button>
+            <button class="chip" type="button" data-intensity="pesado">Pesado</button>
+          </div>
+
+          <div class="divider"></div>
+
+          <h2 class="h2">O que mais está ocupando sua mente hoje?</h2>
+          <p class="help">Se não souber, tudo bem.</p>
+
+          <div class="chips" role="list" aria-label="Tema principal (opcional)">
+            <button class="chip" type="button" data-theme="Trabalho" role="listitem">Trabalho</button>
+            <button class="chip" type="button" data-theme="Família" role="listitem">Família</button>
+            <button class="chip" type="button" data-theme="Futuro" role="listitem">Futuro</button>
+            <button class="chip" type="button" data-theme="Saúde" role="listitem">Saúde</button>
+            <button class="chip" type="button" data-theme="Relacionamentos" role="listitem">Relacionamentos</button>
+            <button class="chip" type="button" data-theme="Eu mesmo(a)" role="listitem">Eu mesmo(a)</button>
+            <button class="chip" type="button" data-theme="" role="listitem">Não sei explicar</button>
+          </div>
+
+          <div class="actions">
+            <button id="btnCheckinNext" class="primary-btn" type="button" disabled>Continuar</button>
+            <button id="btnCancelFlow1" class="secondary-btn" type="button">Voltar</button>
+          </div>
+
+          <p class="safety subtle">
+            Não substitui terapia. Em caso de crise, procure ajuda imediata.
+          </p>
+        </div>
+      </section>
+
+      <!-- DESCARREGO -->
+      <section class="screen" data-screen="dump" aria-labelledby="dumpTitle" hidden>
+        <div class="card">
+          <h1 id="dumpTitle" class="title">Solte do jeito que vier</h1>
+          <p class="help">Escreva sem se preocupar em organizar. Pode ser curto.</p>
+
+          <label class="field" for="dumpText">
+            <span class="label">Seu descarrego (opcional)</span>
+            <textarea id="dumpText" class="textarea" rows="7"
+              placeholder="Hoje eu tô… / Eu queria… / Tá difícil porque…"></textarea>
+          </label>
+
+          <div class="toggle-row">
+            <label class="toggle">
+              <input id="toggleSaveText" type="checkbox" checked />
+              <span>Salvar este texto no histórico</span>
+            </label>
+          </div>
+
+          <p class="help subtle">Você decide depois se quer guardar ou apagar.</p>
+
+          <div class="actions">
+            <button id="btnDumpNext" class="primary-btn" type="button">Continuar</button>
+            <button id="btnClearDump" class="link-btn" type="button" aria-label="Apagar tudo do texto">Apagar tudo</button>
+          </div>
+
+          <p class="safety subtle">
+            Não substitui terapia. Em caso de crise, procure ajuda imediata.
+          </p>
+        </div>
+      </section>
+
+      <!-- CLAREZA -->
+      <section class="screen" data-screen="clarity" aria-labelledby="clarityTitle" hidden>
+        <div class="card">
+          <h1 id="clarityTitle" class="title">Uma pergunta de clareza</h1>
+          <p class="body">Sem pressa — só para você se entender um pouco melhor.</p>
+
+          <div class="question">
+            <p class="h2">Isso precisa de ação agora?</p>
+
+            <div class="radio-group" role="radiogroup" aria-label="Resposta de clareza">
+              <label class="radio">
+                <input type="radio" name="clarity" value="acao" />
+                <span>Sim, um passo pequeno</span>
+              </label>
+
+              <label class="radio">
+                <input type="radio" name="clarity" value="acolhimento" />
+                <span>Não, só acolhimento</span>
+              </label>
+
+              <label class="radio">
+                <input type="radio" name="clarity" value="nao_sei" />
+                <span>Não sei</span>
+              </label>
+            </div>
+          </div>
+
+          <div id="clarityHint" class="hint" role="status" aria-live="polite"></div>
+
+          <div class="actions">
+            <button id="btnClarityNext" class="primary-btn" type="button" disabled>Continuar</button>
+            <button id="btnBackDump" class="secondary-btn" type="button">Voltar</button>
+          </div>
+
+          <p class="safety subtle">
+            Não substitui terapia. Em caso de crise, procure ajuda imediata.
+          </p>
+        </div>
+      </section>
+
+      <!-- MICRO-PAUSA -->
+      <section class="screen" data-screen="pause" aria-labelledby="pauseTitle" hidden>
+        <div class="card">
+          <h1 id="pauseTitle" class="title">Micro-pausa</h1>
+          <p class="body">Escolha uma pausa pequena. Pequeno também é cuidado.</p>
+
+          <div class="pause-grid" aria-label="Opções de micro-pausa">
+            <button class="pause-card" type="button" data-pause="respirar" aria-label="Respirar 60 segundos">
+              <div class="pause-title">Respirar 60s</div>
+              <div class="pause-desc">Só acompanha.</div>
+            </button>
+
+            <button class="pause-card" type="button" data-pause="pausa" aria-label="Pausa de 2 minutos">
+              <div class="pause-title">Pausa de 2 min</div>
+              <div class="pause-desc">Sem fazer nada.</div>
+            </button>
+
+            <button class="pause-card" type="button" data-pause="alongar" aria-label="Alongar">
+              <div class="pause-title">Alongar</div>
+              <div class="pause-desc">Solta o corpo.</div>
+            </button>
+
+            <button class="pause-card" type="button" data-pause="agua" aria-label="Água">
+              <div class="pause-title">Água</div>
+              <div class="pause-desc">Um gole já ajuda.</div>
+            </button>
+
+            <button class="pause-card" type="button" data-pause="pular" aria-label="Pular por agora">
+              <div class="pause-title">Pular por agora</div>
+              <div class="pause-desc">Tudo bem.</div>
+            </button>
+          </div>
+
+          <div class="actions">
+            <button id="btnPauseNext" class="primary-btn" type="button" disabled>Continuar</button>
+            <button id="btnBackClarity" class="secondary-btn" type="button">Voltar</button>
+          </div>
+
+          <p class="safety subtle">
+            Não substitui terapia. Em caso de crise, procure ajuda imediata.
+          </p>
+        </div>
+      </section>
+
+      <!-- TIMER -->
+      <section class="screen" data-screen="timer" aria-labelledby="timerTitle" hidden>
+        <div class="card">
+          <h1 id="timerTitle" class="title">Micro-pausa</h1>
+          <p id="timerText" class="body">Inspire… solte… só acompanha.</p>
+
+          <div class="timer">
+            <div id="timerCountdown" class="countdown" aria-label="Contagem regressiva">60</div>
+            <div class="progress" aria-hidden="true">
+              <div id="timerBar" class="bar"></div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="btnEndTimer" class="secondary-btn" type="button">Encerrar pausa</button>
+          </div>
+
+          <p class="safety subtle">
+            Não substitui terapia. Em caso de crise, procure ajuda imediata.
+          </p>
+        </div>
+      </section>
+
+      <!-- PAUSA FEITA -->
+      <section class="screen" data-screen="pauseDone" aria-labelledby="pauseDoneTitle" hidden>
+        <div class="card">
+          <h1 id="pauseDoneTitle" class="title">Feito. Você esteve com você.</h1>
+          <p class="body">Pequeno também é cuidado.</p>
+
+          <div class="actions">
+            <button id="btnPauseDoneNext" class="primary-btn" type="button">Continuar</button>
+          </div>
+
+          <p class="safety subtle">
+            Não substitui terapia. Em caso de crise, procure ajuda imediata.
+          </p>
+        </div>
+      </section>
+
+      <!-- ENCERRAMENTO -->
+      <section class="screen" data-screen="finish" aria-labelledby="finishTitle" hidden>
+        <div class="card">
+          <h1 id="finishTitle" class="title">Você fez o que era possível agora</h1>
+          <p class="body">Nem tudo se resolve hoje. Mas clarear um pouco já conta.</p>
+
+          <div class="actions">
+            <button id="btnFinishClose" class="primary-btn" type="button">Encerrar</button>
+            <button id="btnFinishHistory" class="secondary-btn" type="button">Ver histórico</button>
+          </div>
+
+          <p class="safety subtle">
+            Não substitui terapia. Em caso de crise, procure ajuda imediata.
+          </p>
+        </div>
+      </section>
+
+      <!-- HISTÓRICO -->
+      <section class="screen" data-screen="history" aria-labelledby="historyTitle" hidden>
+        <div class="card">
+          <h1 id="historyTitle" class="title">Seu histórico</h1>
+          <p class="body">Um jeito de perceber padrões com gentileza.</p>
+
+          <div id="historyEmpty" class="empty" hidden>
+            <p class="body">Quando você fizer check-ins, eles aparecem aqui.</p>
+            <button id="btnHistoryStart" class="primary-btn" type="button">Fazer um check-in</button>
+          </div>
+
+          <div id="historyList" class="list" aria-label="Lista de check-ins"></div>
+        </div>
+      </section>
+
+      <!-- DETALHE -->
+      <section class="screen" data-screen="detail" aria-labelledby="detailTitle" hidden>
+        <div class="card">
+          <h1 id="detailTitle" class="title">Detalhe do check-in</h1>
+
+          <div id="detailBody" class="detail"></div>
+
+          <div class="actions">
+            <button id="btnCopySummary" class="primary-btn" type="button">Copiar resumo</button>
+            <button id="btnDeleteRecord" class="danger-btn" type="button">Deletar</button>
+            <button id="btnBackHistory" class="secondary-btn" type="button">Voltar</button>
+          </div>
+
+          <p class="safety subtle">
+            Não substitui terapia. Em caso de crise, procure ajuda imediata.
+          </p>
+        </div>
+      </section>
+
+      <!-- CONFIG -->
+      <section class="screen" data-screen="config" aria-labelledby="configTitle" hidden>
+        <div class="card">
+          <h1 id="configTitle" class="title">Config & apoio</h1>
+
+          <div class="block">
+            <h2 class="h2">Privacidade</h2>
+            <p class="body">Seus registros ficam apenas neste dispositivo (LocalStorage).</p>
+          </div>
+
+          <div class="block">
+            <h2 class="h2">Apoio profissional</h2>
+            <p class="body"><strong>Conversar com alguém pode ajudar</strong></p>
+            <p class="body">Se você sentir que precisa de apoio humano e especializado, você pode buscar terapia.</p>
+            <p class="help subtle">O Pausa Interna não substitui acompanhamento psicológico.</p>
+
+            <a id="therapistLink" class="primary-link" href="https://example.com" target="_blank" rel="noopener noreferrer">
+              Falar com uma terapeuta
+            </a>
+
+            <p class="safety subtle">Se você estiver em risco imediato, procure ajuda da sua região agora.</p>
+          </div>
+
+          <div class="block">
+            <h2 class="h2">Dados</h2>
+            <button id="btnClearAllData" class="danger-btn" type="button">Limpar dados deste dispositivo</button>
+            <p class="help subtle">Isso remove todo o histórico local deste app.</p>
+          </div>
+
+          <div class="actions">
+            <button id="btnHowConfig" class="secondary-btn" type="button">Como funciona</button>
+          </div>
+
+          <p class="safety subtle">
+            Não substitui terapia. Em caso de crise, procure ajuda imediata.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav" aria-label="Navegação principal">
+      <button class="nav-btn" type="button" data-nav="home" aria-label="Ir para início">
+        Início
+      </button>
+      <button class="nav-btn" type="button" data-nav="history" aria-label="Ir para histórico">
+        Histórico
+      </button>
+      <button class="nav-btn" type="button" data-nav="config" aria-label="Ir para configurações e apoio">
+        Config
+      </button>
+    </nav>
+
+    <!-- Modal base -->
+    <div id="modal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="modal-backdrop" data-modal-close="true"></div>
+      <div class="modal-card" role="document" aria-labelledby="modalTitle">
+        <h2 id="modalTitle" class="h2">Título</h2>
+        <div id="modalBody" class="modal-body"></div>
+        <div id="modalActions" class="modal-actions"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
