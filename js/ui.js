@@ -1,182 +1,219 @@
 // js/ui.js
-// Camada de UI: DOM, render, navegação e eventos. Sem regras de negócio.
-// Recebe callbacks do main.js (orquestra).
-
-import { formatDateTime, labelClarity, labelIntensity, labelPause, snippet } from "./utils.js";
+// UI (DOM only): renderização, navegação, eventos.
+// NÃO faz persistência, NÃO chama WhatsApp, NÃO contém regra de negócio.
 
 export function initUI(handlers) {
   const els = cacheEls();
 
-  // Navegação bottom
-  els.bottomNav.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-nav]");
-    if (!btn) return;
-    handlers.onNavigate(btn.dataset.nav);
-  });
-
-  // Top "Como funciona"
-  els.btnHowTop.addEventListener("click", () => handlers.onOpenHow());
+  // Top bar
+  els.btnHowTop?.addEventListener("click", () => handlers.onOpenHow?.());
 
   // Home
-  els.btnStart.addEventListener("click", () => handlers.onStartFlow());
-  els.btnHowHome.addEventListener("click", () => handlers.onOpenHow());
+  els.btnStart?.addEventListener("click", () => handlers.onStartFlow?.());
+  els.btnHowHome?.addEventListener("click", () => handlers.onOpenHow?.());
 
-  // Check-in interactions
-  els.screenCheckin.addEventListener("click", (e) => {
-    const intBtn = e.target.closest("[data-intensity]");
-    if (intBtn) {
-      handlers.onPickIntensity(intBtn.dataset.intensity);
-      return;
-    }
-    const themeBtn = e.target.closest("[data-theme]");
-    if (themeBtn) {
+  // Bottom nav
+  els.navButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const target = btn.getAttribute("data-nav");
+      if (target) handlers.onNavigate?.(target);
+    });
+  });
+
+  // Check-in: intensidade
+  els.intensityBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const v = btn.getAttribute("data-intensity");
+      if (v) handlers.onPickIntensity?.(v);
+    });
+  });
+
+  // Check-in: tema
+  els.themeChips.forEach((btn) => {
+    btn.addEventListener("click", () => {
       // data-theme pode ser "" (Não sei explicar)
-      handlers.onPickTheme(themeBtn.dataset.theme || "");
-      return;
-    }
+      const v = btn.getAttribute("data-theme");
+      handlers.onPickTheme?.(v ?? "");
+    });
   });
 
-  els.btnCheckinNext.addEventListener("click", () => handlers.onCheckinNext());
-  els.btnCancelFlow1.addEventListener("click", () => handlers.onCancelFlow());
+  els.btnCheckinNext?.addEventListener("click", () => handlers.onCheckinNext?.());
+  els.btnCancelFlow1?.addEventListener("click", () => handlers.onCancelFlow?.());
 
-  // Dump
-  els.dumpText.addEventListener("input", () => handlers.onDumpTextChange(els.dumpText.value));
-  els.toggleSaveText.addEventListener("change", () => handlers.onToggleSaveText(els.toggleSaveText.checked));
-  els.btnDumpNext.addEventListener("click", () => handlers.onDumpNext());
-  els.btnClearDump.addEventListener("click", () => handlers.onClearDump());
-
-  // Clarity
-  els.screenClarity.addEventListener("change", (e) => {
-    const input = e.target.closest('input[name="clarity"]');
-    if (!input) return;
-    handlers.onPickClarity(input.value);
+  // Descarrego
+  els.dumpText?.addEventListener("input", () => {
+    handlers.onDumpTextChange?.(els.dumpText.value);
   });
-  els.btnClarityNext.addEventListener("click", () => handlers.onClarityNext());
-  els.btnBackDump.addEventListener("click", () => handlers.onBackToDump());
 
-  // Pause selection
-  els.screenPause.addEventListener("click", (e) => {
-    const p = e.target.closest("[data-pause]");
-    if (!p) return;
-    handlers.onPickPause(p.dataset.pause);
+  els.toggleSaveText?.addEventListener("change", () => {
+    handlers.onToggleSaveText?.(!!els.toggleSaveText.checked);
   });
-  els.btnPauseNext.addEventListener("click", () => handlers.onPauseNext());
-  els.btnBackClarity.addEventListener("click", () => handlers.onBackToClarity());
+
+  els.btnClearDump?.addEventListener("click", (e) => {
+    e.preventDefault();
+    handlers.onClearDump?.();
+  });
+
+  els.btnDumpNext?.addEventListener("click", () => handlers.onDumpNext?.());
+
+  // Clareza
+  els.clarityRadios.forEach((r) => {
+    r.addEventListener("change", () => {
+      if (r.checked) handlers.onPickClarity?.(r.value);
+    });
+  });
+
+  els.btnClarityNext?.addEventListener("click", () => handlers.onClarityNext?.());
+  els.btnBackDump?.addEventListener("click", () => handlers.onBackToDump?.());
+
+  // Micro-pausa
+  els.pauseCards.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const v = btn.getAttribute("data-pause");
+      if (v) handlers.onPickPause?.(v);
+    });
+  });
+
+  els.btnPauseNext?.addEventListener("click", () => handlers.onPauseNext?.());
+  els.btnBackClarity?.addEventListener("click", () => handlers.onBackToClarity?.());
 
   // Timer
-  els.btnEndTimer.addEventListener("click", () => handlers.onEndTimer());
+  els.btnEndTimer?.addEventListener("click", () => handlers.onEndTimer?.());
 
   // Pause done
-  els.btnPauseDoneNext.addEventListener("click", () => handlers.onPauseDoneNext());
+  els.btnPauseDoneNext?.addEventListener("click", () => handlers.onPauseDoneNext?.());
 
   // Finish
-  els.btnFinishClose.addEventListener("click", () => handlers.onFinishClose());
-  els.btnFinishHistory.addEventListener("click", () => handlers.onFinishHistory());
+  els.btnFinishClose?.addEventListener("click", () => handlers.onFinishClose?.());
+  els.btnFinishHistory?.addEventListener("click", () => handlers.onFinishHistory?.());
 
   // History
-  els.btnHistoryStart.addEventListener("click", () => handlers.onStartFlow());
-  els.historyList.addEventListener("click", (e) => {
-    const item = e.target.closest("[data-id]");
-    if (!item) return;
-    handlers.onOpenDetail(item.dataset.id);
-  });
+  els.btnHistoryStart?.addEventListener("click", () => handlers.onStartFlow?.());
 
   // Detail
-  els.btnBackHistory.addEventListener("click", () => handlers.onBackToHistory());
-  els.btnCopySummary.addEventListener("click", () => handlers.onCopySummary());
-  els.btnDeleteRecord.addEventListener("click", () => handlers.onRequestDeleteCurrent());
+  els.btnBackHistory?.addEventListener("click", () => handlers.onBackToHistory?.());
+  els.btnCopySummary?.addEventListener("click", () => handlers.onCopySummary?.());
+  els.btnDeleteRecord?.addEventListener("click", () => handlers.onRequestDeleteCurrent?.());
+
+  // ✅ Enviar para alguém (abre modal)
+  els.btnSendSomeone?.addEventListener("click", () => handlers.onSendSomeone?.());
 
   // Config
-  els.btnHowConfig.addEventListener("click", () => handlers.onOpenHow());
-  els.btnClearAllData.addEventListener("click", () => handlers.onRequestClearAllData());
+  els.btnClearAllData?.addEventListener("click", () => handlers.onRequestClearAllData?.());
+  els.btnHowConfig?.addEventListener("click", () => handlers.onOpenHow?.());
 
-  // Modal close by backdrop
-  els.modal.addEventListener("click", (e) => {
-    const close = e.target.closest("[data-modal-close]");
-    if (close) handlers.onCloseModal();
+  // Modal base: fechar ao clicar backdrop
+  els.modal?.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && t.getAttribute && t.getAttribute("data-modal-close") === "true") {
+      handlers.onCloseModal?.();
+    }
   });
 
-  // Keyboard: ESC closes modal
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && isModalOpen(els)) handlers.onCloseModal();
-  });
-
+  // API pública para o main.js
   return {
     els,
+
     showScreen: (name) => showScreen(els, name),
     setNavCurrent: (name) => setNavCurrent(els, name),
     toast: (msg) => toast(els, msg),
+
     renderCheckin: (state) => renderCheckin(els, state),
     renderDump: (state) => renderDump(els, state),
     renderClarity: (state) => renderClarity(els, state),
     renderPause: (state) => renderPause(els, state),
+
     renderTimer: (payload) => renderTimer(els, payload),
     updateTimer: (payload) => updateTimer(els, payload),
-    renderHistory: (records) => renderHistory(els, records),
+
+    renderHistory: (records) => renderHistory(els, records, handlers.onOpenDetail),
     renderDetail: (record) => renderDetail(els, record),
+
     openHowModal: () => openHowModal(els),
     openConfirmModal: (opts) => openConfirmModal(els, opts),
     closeModal: () => closeModal(els),
+
+    // ✅ Modal de envio chama callback DIRETO (preserva clique real)
+    openSendModal: () => openSendModal(els, handlers.onConfirmSend),
   };
 }
 
+/* =========================
+   Cache DOM
+========================= */
 function cacheEls() {
   const q = (sel) => document.querySelector(sel);
+  const qa = (sel) => Array.from(document.querySelectorAll(sel));
 
   return {
-    screens: Array.from(document.querySelectorAll("[data-screen]")),
+    screens: qa(".screen"),
 
-    bottomNav: q(".bottom-nav"),
-    navBtns: Array.from(document.querySelectorAll(".nav-btn")),
+    toast: q("#toast"),
 
+    // Top
     btnHowTop: q("#btnHowTop"),
+
+    // Home
     btnStart: q("#btnStart"),
     btnHowHome: q("#btnHowHome"),
 
-    screenCheckin: q('[data-screen="checkin"]'),
+    // Bottom nav
+    navButtons: qa("[data-nav]"),
+
+    // Check-in
+    intensityBtns: qa("[data-intensity]"),
+    themeChips: qa("[data-theme]"),
     btnCheckinNext: q("#btnCheckinNext"),
     btnCancelFlow1: q("#btnCancelFlow1"),
 
+    // Dump
     dumpText: q("#dumpText"),
     toggleSaveText: q("#toggleSaveText"),
     btnDumpNext: q("#btnDumpNext"),
     btnClearDump: q("#btnClearDump"),
 
-    screenClarity: q('[data-screen="clarity"]'),
+    // Clarity
+    clarityRadios: qa('input[name="clarity"]'),
     clarityHint: q("#clarityHint"),
     btnClarityNext: q("#btnClarityNext"),
     btnBackDump: q("#btnBackDump"),
 
-    screenPause: q('[data-screen="pause"]'),
+    // Pause
+    pauseCards: qa("[data-pause]"),
     btnPauseNext: q("#btnPauseNext"),
     btnBackClarity: q("#btnBackClarity"),
 
-    screenTimer: q('[data-screen="timer"]'),
+    // Timer
     timerTitle: q("#timerTitle"),
     timerText: q("#timerText"),
     timerCountdown: q("#timerCountdown"),
     timerBar: q("#timerBar"),
     btnEndTimer: q("#btnEndTimer"),
 
+    // Pause done
     btnPauseDoneNext: q("#btnPauseDoneNext"),
 
+    // Finish
     btnFinishClose: q("#btnFinishClose"),
     btnFinishHistory: q("#btnFinishHistory"),
 
+    // History
     historyEmpty: q("#historyEmpty"),
     historyList: q("#historyList"),
     btnHistoryStart: q("#btnHistoryStart"),
 
+    // Detail
     detailBody: q("#detailBody"),
-    btnBackHistory: q("#btnBackHistory"),
+    btnSendSomeone: q("#btnSendSomeone"),
     btnCopySummary: q("#btnCopySummary"),
     btnDeleteRecord: q("#btnDeleteRecord"),
+    btnBackHistory: q("#btnBackHistory"),
 
-    btnHowConfig: q("#btnHowConfig"),
+    // Config
     btnClearAllData: q("#btnClearAllData"),
+    btnHowConfig: q("#btnHowConfig"),
 
-    toast: q("#toast"),
-
+    // Modal base
     modal: q("#modal"),
     modalTitle: q("#modalTitle"),
     modalBody: q("#modalBody"),
@@ -184,289 +221,393 @@ function cacheEls() {
   };
 }
 
+/* =========================
+   Navegação de telas
+========================= */
 function showScreen(els, name) {
-  for (const s of els.screens) {
-    const isTarget = s.dataset.screen === name;
-    s.hidden = !isTarget;
-  }
+  els.screens.forEach((sec) => {
+    const id = sec.getAttribute("data-screen");
+    const isTarget = id === name;
+    sec.hidden = !isTarget;
+  });
 
-  // Foco no título da tela (acessibilidade)
-  const active = els.screens.find((s) => s.dataset.screen === name);
+  // foco gentil: tenta focar primeiro título da tela
+  const active = els.screens.find((s) => !s.hidden);
   if (active) {
-    const h1 = active.querySelector("h1");
-    if (h1) {
-      h1.setAttribute("tabindex", "-1");
-      h1.focus({ preventScroll: true });
-      // remove tabindex depois (evita ficar no tab-flow)
-      setTimeout(() => h1.removeAttribute("tabindex"), 50);
+    const title = active.querySelector("h1, h2, .title");
+    if (title && typeof title.focus === "function") {
+      // só se tiver tabindex
+      // (se não tiver, não força)
+      try { title.focus(); } catch {}
     }
   }
 }
 
 function setNavCurrent(els, name) {
-  for (const btn of els.navBtns) {
-    const isCurrent = btn.dataset.nav === name;
-    if (isCurrent) btn.setAttribute("aria-current", "page");
-    else btn.removeAttribute("aria-current");
-  }
+  els.navButtons.forEach((btn) => {
+    const t = btn.getAttribute("data-nav");
+    const isCurrent = t === name;
+    btn.classList.toggle("is-current", isCurrent);
+    btn.setAttribute("aria-current", isCurrent ? "page" : "false");
+  });
 }
 
-let toastTimer = null;
+/* =========================
+   Toast
+========================= */
 function toast(els, msg) {
+  if (!els.toast) return;
   els.toast.textContent = msg;
-  els.toast.style.display = "block";
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => {
-    els.toast.style.display = "none";
-    els.toast.textContent = "";
-  }, 2400);
+  els.toast.classList.add("show");
+  window.clearTimeout(els.toast._t);
+  els.toast._t = window.setTimeout(() => els.toast.classList.remove("show"), 2000);
 }
 
-/* ---------- Renders ---------- */
-
-export function renderCheckin(els, state) {
-  // Intensidade
-  const intButtons = els.screenCheckin.querySelectorAll("[data-intensity]");
-  intButtons.forEach((b) => {
-    const pressed = b.dataset.intensity === state.intensity;
-    b.setAttribute("aria-pressed", pressed ? "true" : "false");
+/* =========================
+   Render — Check-in
+========================= */
+function renderCheckin(els, state) {
+  // Intensidade: botão ativo
+  els.intensityBtns.forEach((btn) => {
+    const v = btn.getAttribute("data-intensity");
+    const active = v === state.intensity;
+    btn.classList.toggle("selected", active);
+    btn.setAttribute("aria-pressed", active ? "true" : "false");
   });
 
-  // Tema
-  const themeButtons = els.screenCheckin.querySelectorAll("[data-theme]");
-  themeButtons.forEach((b) => {
-    const theme = b.dataset.theme || "";
-    const pressed = theme === (state.theme || "");
-    b.setAttribute("aria-pressed", pressed ? "true" : "false");
+  // Tema: chip ativo (data-theme pode ser "")
+  els.themeChips.forEach((btn) => {
+    const v = btn.getAttribute("data-theme");
+    const active = (v ?? "") === (state.theme ?? "");
+    btn.classList.toggle("selected", active);
+    btn.setAttribute("aria-pressed", active ? "true" : "false");
   });
 
-  els.btnCheckinNext.disabled = !state.intensity;
-}
-
-export function renderDump(els, state) {
-  // Não “força” texto: se o usuário está digitando, respeita.
-  if (els.dumpText.value !== (state.text || "")) {
-    els.dumpText.value = state.text || "";
+  // Botão continuar só se intensidade selecionada
+  if (els.btnCheckinNext) {
+    els.btnCheckinNext.disabled = !state.intensity;
   }
-  els.toggleSaveText.checked = !!state.save_text;
 }
 
-export function renderClarity(els, state) {
-  const radios = els.screenClarity.querySelectorAll('input[name="clarity"]');
-  radios.forEach((r) => (r.checked = r.value === state.clarity_answer));
-
-  els.btnClarityNext.disabled = !state.clarity_answer;
-
-  const hint = clarityHintText(state.clarity_answer);
-  els.clarityHint.textContent = hint || "";
+/* =========================
+   Render — Descarrego
+========================= */
+function renderDump(els, state) {
+  if (els.dumpText) els.dumpText.value = state._draft_text ?? "";
+  if (els.toggleSaveText) els.toggleSaveText.checked = !!state.save_text;
 }
 
-function clarityHintText(answer) {
-  if (answer === "acao") return "Tudo bem. Vamos pensar no menor passo possível.";
-  if (answer === "acolhimento") return "Certo. Agora é sobre respirar e aliviar um pouco.";
-  if (answer === "nao_sei") return "Tudo bem não saber. Vamos por leveza primeiro.";
+/* =========================
+   Render — Clareza
+========================= */
+function renderClarity(els, state) {
+  // marcar radio
+  els.clarityRadios.forEach((r) => {
+    r.checked = r.value === state.clarity_answer;
+  });
+
+  // hint dinâmico
+  if (els.clarityHint) {
+    els.clarityHint.textContent = clarityHintFor(state.clarity_answer);
+  }
+
+  // botão continuar
+  if (els.btnClarityNext) {
+    els.btnClarityNext.disabled = !state.clarity_answer;
+  }
+}
+
+function clarityHintFor(v) {
+  if (v === "acao") return "Tudo bem. Vamos pensar no menor passo possível.";
+  if (v === "acolhimento") return "Certo. Agora é sobre respirar e aliviar um pouco.";
+  if (v === "nao_sei") return "Tudo bem não saber. Vamos por leveza primeiro.";
   return "";
 }
 
-export function renderPause(els, state) {
-  const cards = els.screenPause.querySelectorAll("[data-pause]");
-  cards.forEach((c) => {
-    const pressed = c.dataset.pause === state.micro_pause;
-    c.setAttribute("aria-pressed", pressed ? "true" : "false");
+/* =========================
+   Render — Micro-pausa
+========================= */
+function renderPause(els, state) {
+  els.pauseCards.forEach((btn) => {
+    const v = btn.getAttribute("data-pause");
+    const active = v === state.micro_pause;
+    btn.classList.toggle("selected", active);
+    btn.setAttribute("aria-pressed", active ? "true" : "false");
   });
-  els.btnPauseNext.disabled = !state.micro_pause;
+
+  if (els.btnPauseNext) {
+    els.btnPauseNext.disabled = !state.micro_pause;
+  }
 }
 
-export function renderTimer(els, payload) {
-  // payload: { mode, totalSeconds, remainingSeconds, text }
-  els.timerText.textContent = payload.text;
-  els.timerCountdown.textContent = String(payload.remainingSeconds);
-  els.timerBar.style.width = `${percentDone(payload.totalSeconds, payload.remainingSeconds)}%`;
+/* =========================
+   Timer
+========================= */
+function renderTimer(els, payload) {
+  const { totalSeconds, remainingSeconds, text } = payload;
+
+  if (els.timerTitle) {
+    els.timerTitle.textContent = totalSeconds === 60 ? "Respirar 60s" : "Pausa de 2 min";
+  }
+  if (els.timerText) els.timerText.textContent = text || "";
+  if (els.timerCountdown) els.timerCountdown.textContent = formatCountdown(remainingSeconds);
+  if (els.timerBar) els.timerBar.style.width = progressPct(totalSeconds, remainingSeconds) + "%";
 }
 
-export function updateTimer(els, payload) {
-  els.timerCountdown.textContent = String(payload.remainingSeconds);
-  els.timerBar.style.width = `${percentDone(payload.totalSeconds, payload.remainingSeconds)}%`;
+function updateTimer(els, payload) {
+  const { totalSeconds, remainingSeconds } = payload;
+  if (els.timerCountdown) els.timerCountdown.textContent = formatCountdown(remainingSeconds);
+  if (els.timerBar) els.timerBar.style.width = progressPct(totalSeconds, remainingSeconds) + "%";
 }
 
-function percentDone(total, remaining) {
-  const done = total - remaining;
-  const pct = total <= 0 ? 100 : Math.round((done / total) * 100);
-  return Math.max(0, Math.min(100, pct));
+function formatCountdown(seconds) {
+  const s = Math.max(0, Number(seconds) || 0);
+  const mm = String(Math.floor(s / 60)).padStart(2, "0");
+  const ss = String(s % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
 }
 
-export function renderHistory(els, records) {
-  const has = records.length > 0;
+function progressPct(total, remaining) {
+  const t = Math.max(1, Number(total) || 1);
+  const r = Math.max(0, Number(remaining) || 0);
+  const done = t - r;
+  return Math.round((done / t) * 100);
+}
 
-  els.historyEmpty.hidden = has;
-  els.historyList.hidden = !has;
+/* =========================
+   Histórico
+========================= */
+function renderHistory(els, records, onOpenDetail) {
+  const list = els.historyList;
+  const empty = els.historyEmpty;
 
-  if (!has) {
-    els.historyList.innerHTML = "";
+  if (!list || !empty) return;
+
+  const items = (records || []).slice().sort((a, b) => {
+    return (b.created_at || "").localeCompare(a.created_at || "");
+  });
+
+  if (items.length === 0) {
+    empty.hidden = false;
+    list.innerHTML = "";
     return;
   }
 
-  els.historyList.innerHTML = records.map((r) => {
-    const when = formatDateTime(r.created_at);
-    const intensity = labelIntensity(r.intensity);
-    const theme = r.theme ? r.theme : "—";
-    const snippetText = r.text ? snippet(r.text, 90) : "";
+  empty.hidden = true;
+  list.innerHTML = "";
 
-    const intensityBadgeClass = r.intensity === "pesado" ? "danger" : "primary";
+  items.forEach((r) => {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "item";
+    card.setAttribute("aria-label", "Abrir detalhe do check-in");
 
-    return `
-      <div class="item" role="button" tabindex="0" data-id="${escapeAttr(r.id)}" aria-label="Abrir check-in de ${when}">
-        <div class="item-top">
-          <div class="badges">
-            <span class="badge">${escapeHtml(when)}</span>
-            <span class="badge ${intensityBadgeClass}">${escapeHtml(intensity)}</span>
-            <span class="badge">${escapeHtml(theme)}</span>
-          </div>
-          <span class="badge">${escapeHtml(labelClarity(r.clarity_answer))}</span>
-        </div>
-        ${snippetText ? `<div class="item-snippet">${escapeHtml(snippetText)}</div>` : ""}
+    const dt = formatDateTime(r.created_at);
+    const theme = r.theme ? ` • ${r.theme}` : "";
+    const snippet = r.text ? escapeHtml(r.text).slice(0, 80) : "";
+
+    card.innerHTML = `
+      <div class="item-top">
+        <div class="item-title">${dt}</div>
+        <div class="item-meta">${escapeHtml(r.intensity || "")}${theme}</div>
       </div>
+      ${snippet ? `<div class="item-snippet">${snippet}${r.text && r.text.length > 80 ? "…" : ""}</div>` : ""}
     `;
-  }).join("");
 
-  // Acessibilidade: Enter/Space abre
-  els.historyList.querySelectorAll(".item").forEach((it) => {
-    it.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        it.click();
-      }
-    });
+    card.addEventListener("click", () => onOpenDetail?.(r.id));
+    list.appendChild(card);
   });
 }
 
-export function renderDetail(els, record) {
+function formatDateTime(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return String(iso || "");
+  }
+}
+
+/* =========================
+   Detalhe
+========================= */
+function renderDetail(els, record) {
+  if (!els.detailBody) return;
+
   if (!record) {
-    els.detailBody.innerHTML = "<p class='body'>Registro não encontrado.</p>";
+    els.detailBody.innerHTML = `<p class="body">Registro não encontrado.</p>`;
     return;
   }
+
+  const dt = formatDateTime(record.created_at);
+  const theme = record.theme ? escapeHtml(record.theme) : "—";
+  const text = record.text ? escapeHtml(record.text) : "—";
+  const clarity = record.clarity_answer ? escapeHtml(record.clarity_answer) : "—";
+  const pause = record.micro_pause ? escapeHtml(record.micro_pause) : "—";
+  const intensity = record.intensity ? escapeHtml(record.intensity) : "—";
 
   els.detailBody.innerHTML = `
-    <div class="kv">
-      <div class="k">Quando</div>
-      <div class="v">${escapeHtml(formatDateTime(record.created_at))}</div>
-    </div>
-    <div class="kv">
-      <div class="k">Como eu estava</div>
-      <div class="v">${escapeHtml(labelIntensity(record.intensity))}</div>
-    </div>
-    <div class="kv">
-      <div class="k">Tema</div>
-      <div class="v">${escapeHtml(record.theme || "—")}</div>
-    </div>
-    <div class="kv">
-      <div class="k">Clareza</div>
-      <div class="v">${escapeHtml(labelClarity(record.clarity_answer))}</div>
-    </div>
-    <div class="kv">
-      <div class="k">Micro-pausa</div>
-      <div class="v">${escapeHtml(labelPause(record.micro_pause))}</div>
-    </div>
-    <div class="kv">
-      <div class="k">Descarrego</div>
-      <div class="v">${record.text ? escapeHtml(record.text) : "— (texto não foi salvo)"}</div>
+    <div class="detail-row"><span class="label">Quando</span><span class="value">${dt}</span></div>
+    <div class="detail-row"><span class="label">Intensidade</span><span class="value">${intensity}</span></div>
+    <div class="detail-row"><span class="label">Tema</span><span class="value">${theme}</span></div>
+    <div class="detail-row"><span class="label">Clareza</span><span class="value">${clarity}</span></div>
+    <div class="detail-row"><span class="label">Micro-pausa</span><span class="value">${pause}</span></div>
+    <div class="detail-block">
+      <div class="label">Texto</div>
+      <div class="value pre">${text}</div>
     </div>
   `;
 }
 
-/* ---------- Modal ---------- */
+/* =========================
+   Modal base (genérico)
+========================= */
+function openModal(els, { title, bodyHtml, actions }) {
+  if (!els.modal || !els.modalTitle || !els.modalBody || !els.modalActions) return;
 
-function isModalOpen(els) {
-  return els.modal.getAttribute("aria-hidden") === "false";
-}
-
-export function openHowModal(els) {
-  const body = `
-    <ul>
-      <li>Você faz um check-in rápido.</li>
-      <li>Solta os pensamentos sem se preocupar em organizar.</li>
-      <li>A gente te faz uma pergunta de clareza.</li>
-      <li>Você escolhe uma micro-pausa (se quiser).</li>
-    </ul>
-    <p style="margin-top:10px;">Leve, sem cobrança. Do seu jeito.</p>
-  `;
-
-  openModal(els, {
-    title: "Como o Pausa Interna funciona",
-    bodyHtml: body,
-    actions: [
-      { label: "Entendi", kind: "primary", onClick: "close" }
-    ],
-  });
-}
-
-export function openConfirmModal(els, opts) {
-  // opts: { title, message, confirmLabel, cancelLabel, danger, onConfirm }
-  openModal(els, {
-    title: opts.title,
-    bodyHtml: `<p>${escapeHtml(opts.message)}</p>`,
-    actions: [
-      { label: opts.cancelLabel || "Cancelar", kind: "secondary", onClick: "cancel" },
-      { label: opts.confirmLabel || "Confirmar", kind: opts.danger ? "danger" : "primary", onClick: "confirm" },
-    ],
-    onConfirm: opts.onConfirm,
-    onCancel: opts.onCancel,
-  });
-}
-
-function openModal(els, config) {
-  els.modalTitle.textContent = config.title || "Aviso";
-  els.modalBody.innerHTML = config.bodyHtml || "";
-
+  els.modalTitle.textContent = title || " ";
+  els.modalBody.innerHTML = bodyHtml || "";
   els.modalActions.innerHTML = "";
-  for (const a of config.actions || []) {
+
+  (actions || []).forEach((a) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.textContent = a.label;
-
-    if (a.kind === "primary") btn.className = "primary-btn";
-    else if (a.kind === "danger") btn.className = "danger-btn";
-    else btn.className = "secondary-btn";
-
-    btn.addEventListener("click", () => {
-      if (a.onClick === "close") closeModal(els);
-      if (a.onClick === "confirm") {
-        closeModal(els);
-        if (typeof config.onConfirm === "function") config.onConfirm();
-      }
-      if (a.onClick === "cancel") {
-        closeModal(els);
-        if (typeof config.onCancel === "function") config.onCancel();
-      }
-    });
-
+    btn.className =
+      a.kind === "danger" ? "danger-btn" :
+      a.kind === "secondary" ? "secondary-btn" :
+      "primary-btn";
+    btn.textContent = a.label || "OK";
+    btn.addEventListener("click", () => a.onClick?.());
     els.modalActions.appendChild(btn);
-  }
+  });
 
+  els.modal.classList.add("open");
   els.modal.setAttribute("aria-hidden", "false");
-  // foco no primeiro botão
-  const firstBtn = els.modalActions.querySelector("button");
-  if (firstBtn) firstBtn.focus();
 }
 
-export function closeModal(els) {
+function closeModal(els) {
+  if (!els.modal) return;
+  els.modal.classList.remove("open");
   els.modal.setAttribute("aria-hidden", "true");
-  els.modalTitle.textContent = "";
-  els.modalBody.innerHTML = "";
-  els.modalActions.innerHTML = "";
+  if (els.modalBody) els.modalBody.innerHTML = "";
+  if (els.modalActions) els.modalActions.innerHTML = "";
 }
 
-/* ---------- Escapes ---------- */
+/* =========================
+   Modal — Como funciona
+========================= */
+function openHowModal(els) {
+  openModal(els, {
+    title: "Como o Pausa Interna funciona",
+    bodyHtml: `
+      <ul class="bullets">
+        <li>Você faz um check-in rápido.</li>
+        <li>Solta os pensamentos sem se preocupar em organizar.</li>
+        <li>A gente te faz uma pergunta de clareza.</li>
+        <li>Você escolhe uma micro-pausa (se quiser).</li>
+      </ul>
+      <p class="body">Leve, sem cobrança. Do seu jeito.</p>
+    `,
+    actions: [
+      { label: "Entendi", kind: "primary", onClick: () => closeModal(els) },
+    ],
+  });
+}
 
-function escapeHtml(str) {
-  return String(str)
+/* =========================
+   Modal — Confirmação genérica
+========================= */
+function openConfirmModal(els, opts) {
+  const {
+    title = "Confirmar",
+    message = "",
+    confirmLabel = "Confirmar",
+    cancelLabel = "Cancelar",
+    danger = false,
+    onConfirm,
+  } = opts || {};
+
+  openModal(els, {
+    title,
+    bodyHtml: `<p class="body">${escapeHtml(message)}</p>`,
+    actions: [
+      { label: cancelLabel, kind: "secondary", onClick: () => closeModal(els) },
+      { label: confirmLabel, kind: danger ? "danger" : "primary", onClick: () => { closeModal(els); onConfirm?.(); } },
+    ],
+  });
+}
+
+/* =========================
+   Modal — Enviar para alguém (ROBUSTO)
+   ✅ chama callback DIRETO no clique de "Continuar"
+========================= */
+function openSendModal(els, onConfirmSend) {
+  openModal(els, {
+    title: "Enviar este resumo",
+    bodyHtml: `
+      <p class="body">Este texto é seu. Envie apenas se fizer sentido agora.</p>
+
+      <div class="radio-group" role="radiogroup" aria-label="Destino do envio">
+        <label class="radio">
+          <input type="radio" name="sendTo" value="me" />
+          <span>Para mim mesmo(a)</span>
+        </label>
+
+        <label class="radio">
+          <input type="radio" name="sendTo" value="therapist" />
+          <span>Para minha terapeuta</span>
+        </label>
+
+        <label class="radio">
+          <input type="radio" name="sendTo" value="other" />
+          <span>Para outra pessoa</span>
+        </label>
+
+        <label class="radio">
+          <input type="radio" name="sendTo" value="none" />
+          <span>Prefiro não enviar agora</span>
+        </label>
+      </div>
+
+      <p class="help subtle">
+        O Pausa Interna não envia mensagens sozinho.
+        Você escolhe o contato e confirma no WhatsApp.
+      </p>
+    `,
+    actions: [
+      { label: "Cancelar", kind: "secondary", onClick: () => closeModal(els) },
+      {
+        label: "Continuar",
+        kind: "primary",
+        onClick: () => {
+          const checked = document.querySelector('input[name="sendTo"]:checked');
+          if (!checked) return;
+          closeModal(els);
+
+          // ✅ callback direto (preserva user-gesture)
+          if (typeof onConfirmSend === "function") {
+            onConfirmSend(checked.value);
+          }
+        },
+      },
+    ],
+  });
+}
+
+/* =========================
+   Utils pequenos (UI)
+========================= */
+function escapeHtml(s) {
+  return String(s ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-}
-
-function escapeAttr(str) {
-  return escapeHtml(str).replaceAll(" ", "%20");
 }

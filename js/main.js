@@ -11,6 +11,7 @@ import {
 } from "./utils.js";
 import { initUI } from "./ui.js";
 
+
 /* =========================
    CONSTANTES DE TELAS
 ========================= */
@@ -56,6 +57,11 @@ function boot() {
     onStartFlow,
     onCancelFlow,
 
+    onSendSomeone,
+    onConfirmSend,
+
+
+
     onPickIntensity,
     onPickTheme,
     onCheckinNext,
@@ -92,8 +98,43 @@ function boot() {
   goHome();
 
   // 🚫 SERVICE WORKER DESATIVADO AQUI
-  // registerServiceWorkerSafely();
+   registerServiceWorkerSafely();
 }
+
+function onConfirmSend(choice) {
+  if (choice === "none") return;
+  if (!app.currentDetailId) return;
+
+  const record = storage.getById(app.currentDetailId);
+  if (!record) return;
+
+  const text = buildWhatsAppText(record);
+
+  // ✅ Preferência moderna (PWA / mobile)
+  if (navigator.share) {
+    navigator.share({
+      text
+    }).catch(() => {
+      fallbackWhatsApp(text);
+    });
+    return;
+  }
+
+  // ✅ Fallback desktop / browsers antigos
+  fallbackWhatsApp(text);
+}
+
+function fallbackWhatsApp(text) {
+  const encoded = encodeURIComponent(text);
+  const url = `https://wa.me/?text=${encoded}`;
+
+  const opened = window.open(url, "_blank", "noopener,noreferrer");
+  if (!opened) {
+    window.location.href = url;
+  }
+}
+
+
 
 /* =========================
    NAVEGAÇÃO PRINCIPAL
@@ -393,4 +434,35 @@ function onRequestClearAllData() {
       goHistory();
     }
   });
+}
+
+function onSendSomeone() {
+  if (!app.currentDetailId) return;
+  app.ui.openSendModal();
+}
+
+
+function buildWhatsAppText(record) {
+  const lines = [];
+
+  lines.push("Resumo de um check-in pessoal");
+  lines.push("(feito no app Pausa Interna)");
+  lines.push("");
+  lines.push(`Quando: ${record.created_at}`);
+  lines.push(`Como eu estava: ${record.intensity}`);
+  if (record.theme) lines.push(`Tema: ${record.theme}`);
+  lines.push(`Clareza: ${record.clarity_answer}`);
+  if (record.micro_pause) lines.push(`Micro-pausa: ${record.micro_pause}`);
+
+  if (record.text) {
+    lines.push("");
+    lines.push("Descarrego:");
+    lines.push(record.text);
+  }
+
+  lines.push("");
+  lines.push("Compartilho isso porque confio em você.");
+  lines.push("Não precisa responder agora.");
+
+  return lines.join("\n");
 }
