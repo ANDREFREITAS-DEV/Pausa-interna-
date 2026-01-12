@@ -84,7 +84,7 @@ function boot() {
   goHome();
 
   // PWA SW (somente em contexto https/localhost)
-  registerServiceWorkerSafely();
+  //registerServiceWorkerSafely();
 }
 
 /* ---------------- Navigation ---------------- */
