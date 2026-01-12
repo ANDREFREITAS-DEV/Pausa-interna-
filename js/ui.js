@@ -5,6 +5,9 @@
 export function initUI(handlers) {
   const els = cacheEls();
 
+  // --- SAFE EVENT LISTENERS ---
+  // (Usamos ?. para evitar crash se o elemento não existir)
+
   // Top bar
   els.btnHowTop?.addEventListener("click", () => handlers.onOpenHow?.());
 
@@ -13,29 +16,34 @@ export function initUI(handlers) {
   els.btnHowHome?.addEventListener("click", () => handlers.onOpenHow?.());
 
   // Bottom nav
-  els.navButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const target = btn.getAttribute("data-nav");
-      if (target) handlers.onNavigate?.(target);
+  if (els.navButtons) {
+    els.navButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const target = btn.getAttribute("data-nav");
+        if (target) handlers.onNavigate?.(target);
+      });
     });
-  });
+  }
 
   // Check-in: intensidade
-  els.intensityBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const v = btn.getAttribute("data-intensity");
-      if (v) handlers.onPickIntensity?.(v);
+  if (els.intensityBtns) {
+    els.intensityBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const v = btn.getAttribute("data-intensity");
+        if (v) handlers.onPickIntensity?.(v);
+      });
     });
-  });
+  }
 
   // Check-in: tema
-  els.themeChips.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      // data-theme pode ser "" (Não sei explicar)
-      const v = btn.getAttribute("data-theme");
-      handlers.onPickTheme?.(v ?? "");
+  if (els.themeChips) {
+    els.themeChips.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const v = btn.getAttribute("data-theme");
+        handlers.onPickTheme?.(v ?? "");
+      });
     });
-  });
+  }
 
   els.btnCheckinNext?.addEventListener("click", () => handlers.onCheckinNext?.());
   els.btnCancelFlow1?.addEventListener("click", () => handlers.onCancelFlow?.());
@@ -57,22 +65,26 @@ export function initUI(handlers) {
   els.btnDumpNext?.addEventListener("click", () => handlers.onDumpNext?.());
 
   // Clareza
-  els.clarityRadios.forEach((r) => {
-    r.addEventListener("change", () => {
-      if (r.checked) handlers.onPickClarity?.(r.value);
+  if (els.clarityRadios) {
+    els.clarityRadios.forEach((r) => {
+      r.addEventListener("change", () => {
+        if (r.checked) handlers.onPickClarity?.(r.value);
+      });
     });
-  });
+  }
 
   els.btnClarityNext?.addEventListener("click", () => handlers.onClarityNext?.());
   els.btnBackDump?.addEventListener("click", () => handlers.onBackToDump?.());
 
   // Micro-pausa
-  els.pauseCards.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const v = btn.getAttribute("data-pause");
-      if (v) handlers.onPickPause?.(v);
+  if (els.pauseCards) {
+    els.pauseCards.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const v = btn.getAttribute("data-pause");
+        if (v) handlers.onPickPause?.(v);
+      });
     });
-  });
+  }
 
   els.btnPauseNext?.addEventListener("click", () => handlers.onPauseNext?.());
   els.btnBackClarity?.addEventListener("click", () => handlers.onBackToClarity?.());
@@ -95,14 +107,16 @@ export function initUI(handlers) {
   els.btnCopySummary?.addEventListener("click", () => handlers.onCopySummary?.());
   els.btnDeleteRecord?.addEventListener("click", () => handlers.onRequestDeleteCurrent?.());
 
-  // ✅ Enviar para alguém (abre modal)
+  // Send
   els.btnSendSomeone?.addEventListener("click", () => handlers.onSendSomeone?.());
 
   // Config
   els.btnClearAllData?.addEventListener("click", () => handlers.onRequestClearAllData?.());
   els.btnHowConfig?.addEventListener("click", () => handlers.onOpenHow?.());
+  els.btnThemeToggle?.addEventListener("click", () => handlers.onToggleTheme?.());
 
-  // Modal base: fechar ao clicar backdrop
+
+  // Modal base
   els.modal?.addEventListener("click", (e) => {
     const t = e.target;
     if (t && t.getAttribute && t.getAttribute("data-modal-close") === "true") {
@@ -110,10 +124,8 @@ export function initUI(handlers) {
     }
   });
 
-  // API pública para o main.js
   return {
     els,
-
     showScreen: (name) => showScreen(els, name),
     setNavCurrent: (name) => setNavCurrent(els, name),
     toast: (msg) => toast(els, msg),
@@ -132,9 +144,9 @@ export function initUI(handlers) {
     openHowModal: () => openHowModal(els),
     openConfirmModal: (opts) => openConfirmModal(els, opts),
     closeModal: () => closeModal(els),
-
-    // ✅ Modal de envio chama callback DIRETO (preserva clique real)
     openSendModal: () => openSendModal(els, handlers.onConfirmSend),
+    
+    setThemeLabel: (mode) => setThemeLabel(els, mode),
   };
 }
 
@@ -147,7 +159,6 @@ function cacheEls() {
 
   return {
     screens: qa(".screen"),
-
     toast: q("#toast"),
 
     // Top
@@ -212,8 +223,9 @@ function cacheEls() {
     // Config
     btnClearAllData: q("#btnClearAllData"),
     btnHowConfig: q("#btnHowConfig"),
+    btnThemeToggle: q("#btnThemeToggle"),
 
-    // Modal base
+    // Modal
     modal: q("#modal"),
     modalTitle: q("#modalTitle"),
     modalBody: q("#modalBody"),
@@ -222,28 +234,27 @@ function cacheEls() {
 }
 
 /* =========================
-   Navegação de telas
+   Funções de UI
 ========================= */
 function showScreen(els, name) {
+  if(!els.screens) return;
   els.screens.forEach((sec) => {
     const id = sec.getAttribute("data-screen");
     const isTarget = id === name;
     sec.hidden = !isTarget;
   });
 
-  // foco gentil: tenta focar primeiro título da tela
   const active = els.screens.find((s) => !s.hidden);
   if (active) {
     const title = active.querySelector("h1, h2, .title");
     if (title && typeof title.focus === "function") {
-      // só se tiver tabindex
-      // (se não tiver, não força)
       try { title.focus(); } catch {}
     }
   }
 }
 
 function setNavCurrent(els, name) {
+  if(!els.navButtons) return;
   els.navButtons.forEach((btn) => {
     const t = btn.getAttribute("data-nav");
     const isCurrent = t === name;
@@ -252,9 +263,6 @@ function setNavCurrent(els, name) {
   });
 }
 
-/* =========================
-   Toast
-========================= */
 function toast(els, msg) {
   if (!els.toast) return;
   els.toast.textContent = msg;
@@ -263,11 +271,7 @@ function toast(els, msg) {
   els.toast._t = window.setTimeout(() => els.toast.classList.remove("show"), 2000);
 }
 
-/* =========================
-   Render — Check-in
-========================= */
 function renderCheckin(els, state) {
-  // Intensidade: botão ativo
   els.intensityBtns.forEach((btn) => {
     const v = btn.getAttribute("data-intensity");
     const active = v === state.intensity;
@@ -275,7 +279,6 @@ function renderCheckin(els, state) {
     btn.setAttribute("aria-pressed", active ? "true" : "false");
   });
 
-  // Tema: chip ativo (data-theme pode ser "")
   els.themeChips.forEach((btn) => {
     const v = btn.getAttribute("data-theme");
     const active = (v ?? "") === (state.theme ?? "");
@@ -283,35 +286,25 @@ function renderCheckin(els, state) {
     btn.setAttribute("aria-pressed", active ? "true" : "false");
   });
 
-  // Botão continuar só se intensidade selecionada
   if (els.btnCheckinNext) {
     els.btnCheckinNext.disabled = !state.intensity;
   }
 }
 
-/* =========================
-   Render — Descarrego
-========================= */
 function renderDump(els, state) {
   if (els.dumpText) els.dumpText.value = state._draft_text ?? "";
   if (els.toggleSaveText) els.toggleSaveText.checked = !!state.save_text;
 }
 
-/* =========================
-   Render — Clareza
-========================= */
 function renderClarity(els, state) {
-  // marcar radio
   els.clarityRadios.forEach((r) => {
     r.checked = r.value === state.clarity_answer;
   });
 
-  // hint dinâmico
   if (els.clarityHint) {
     els.clarityHint.textContent = clarityHintFor(state.clarity_answer);
   }
 
-  // botão continuar
   if (els.btnClarityNext) {
     els.btnClarityNext.disabled = !state.clarity_answer;
   }
@@ -324,9 +317,6 @@ function clarityHintFor(v) {
   return "";
 }
 
-/* =========================
-   Render — Micro-pausa
-========================= */
 function renderPause(els, state) {
   els.pauseCards.forEach((btn) => {
     const v = btn.getAttribute("data-pause");
@@ -340,9 +330,6 @@ function renderPause(els, state) {
   }
 }
 
-/* =========================
-   Timer
-========================= */
 function renderTimer(els, payload) {
   const { totalSeconds, remainingSeconds, text } = payload;
 
@@ -374,9 +361,6 @@ function progressPct(total, remaining) {
   return Math.round((done / t) * 100);
 }
 
-/* =========================
-   Histórico
-========================= */
 function renderHistory(els, records, onOpenDetail) {
   const list = els.historyList;
   const empty = els.historyEmpty;
@@ -434,9 +418,6 @@ function formatDateTime(iso) {
   }
 }
 
-/* =========================
-   Detalhe
-========================= */
 function renderDetail(els, record) {
   if (!els.detailBody) return;
 
@@ -465,9 +446,6 @@ function renderDetail(els, record) {
   `;
 }
 
-/* =========================
-   Modal base (genérico)
-========================= */
 function openModal(els, { title, bodyHtml, actions }) {
   if (!els.modal || !els.modalTitle || !els.modalBody || !els.modalActions) return;
 
@@ -499,9 +477,6 @@ function closeModal(els) {
   if (els.modalActions) els.modalActions.innerHTML = "";
 }
 
-/* =========================
-   Modal — Como funciona
-========================= */
 function openHowModal(els) {
   openModal(els, {
     title: "Como o Pausa Interna funciona",
@@ -520,9 +495,6 @@ function openHowModal(els) {
   });
 }
 
-/* =========================
-   Modal — Confirmação genérica
-========================= */
 function openConfirmModal(els, opts) {
   const {
     title = "Confirmar",
@@ -543,10 +515,6 @@ function openConfirmModal(els, opts) {
   });
 }
 
-/* =========================
-   Modal — Enviar para alguém (ROBUSTO)
-   ✅ chama callback DIRETO no clique de "Continuar"
-========================= */
 function openSendModal(els, onConfirmSend) {
   openModal(els, {
     title: "Enviar este resumo",
@@ -589,8 +557,6 @@ function openSendModal(els, onConfirmSend) {
           const checked = document.querySelector('input[name="sendTo"]:checked');
           if (!checked) return;
           closeModal(els);
-
-          // ✅ callback direto (preserva user-gesture)
           if (typeof onConfirmSend === "function") {
             onConfirmSend(checked.value);
           }
@@ -600,9 +566,6 @@ function openSendModal(els, onConfirmSend) {
   });
 }
 
-/* =========================
-   Utils pequenos (UI)
-========================= */
 function escapeHtml(s) {
   return String(s ?? "")
     .replaceAll("&", "&amp;")
@@ -610,4 +573,15 @@ function escapeHtml(s) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function setThemeLabel(els, mode) {
+  // Proteção: verifica se o botão existe antes de mudar texto
+  if (!els.btnThemeToggle) return;
+  
+  if (mode === "light") {
+    els.btnThemeToggle.textContent = "Usar tema escuro";
+  } else {
+    els.btnThemeToggle.textContent = "Usar tema claro";
+  }
 }

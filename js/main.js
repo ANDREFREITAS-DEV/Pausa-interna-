@@ -1,7 +1,4 @@
 // js/main.js
-// Orquestra fluxo + estado global do app
-// Service Worker DESATIVADO propositalmente para evitar quebra no deploy
-
 import * as storage from "./storage.js";
 import {
   buildTherapySummary,
@@ -10,7 +7,6 @@ import {
   safeTrim
 } from "./utils.js";
 import { initUI } from "./ui.js";
-
 
 /* =========================
    CONSTANTES DE TELAS
@@ -29,6 +25,8 @@ const SCREENS = {
   CONFIG: "config"
 };
 
+const THEME_KEY = "pausa_interna_theme";
+
 /* =========================
    ESTADO GLOBAL DO APP
 ========================= */
@@ -46,61 +44,79 @@ const app = {
 };
 
 /* =========================
-   BOOT
+   BOOT (INICIALIZAÇÃO)
 ========================= */
-boot();
-
-function boot() {
-  app.ui = initUI({
-    onNavigate,
-    onOpenHow,
-    onStartFlow,
-    onCancelFlow,
-
-    onSendSomeone,
-    onConfirmSend,
-
-
-
-    onPickIntensity,
-    onPickTheme,
-    onCheckinNext,
-
-    onDumpTextChange,
-    onToggleSaveText,
-    onClearDump,
-    onDumpNext,
-
-    onPickClarity,
-    onClarityNext,
-    onBackToDump,
-
-    onPickPause,
-    onPauseNext,
-    onBackToClarity,
-
-    onEndTimer,
-    onPauseDoneNext,
-
-    onFinishClose,
-    onFinishHistory,
-
-    onOpenDetail,
-    onBackToHistory,
-    onCopySummary,
-    onRequestDeleteCurrent,
-    onRequestClearAllData,
-
-    onCloseModal: () => app.ui.closeModal()
-  });
-
-  // Tela inicial
-  goHome();
-
-  // 🚫 SERVICE WORKER DESATIVADO AQUI
-   registerServiceWorkerSafely();
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", boot);
+} else {
+  boot();
 }
 
+function boot() {
+  console.log("Sistema iniciando...");
+  
+  try {
+    // 1. Aplica o tema ANTES de iniciar a UI para evitar flash visual
+    applyInitialTheme();
+
+    // 2. Inicia UI passando TODOS os callbacks
+    app.ui = initUI({
+      onNavigate,
+      onOpenHow,
+      onStartFlow,
+      onCancelFlow,
+
+      onSendSomeone,
+      onConfirmSend,
+
+      onPickIntensity,
+      onPickTheme, // Atenção: este é o tema do Check-in (Família, Trabalho...)
+      onCheckinNext,
+
+      onDumpTextChange,
+      onToggleSaveText,
+      onClearDump,
+      onDumpNext,
+
+      onPickClarity,
+      onClarityNext,
+      onBackToDump,
+
+      onPickPause,
+      onPauseNext,
+      onBackToClarity,
+
+      onEndTimer,
+      onPauseDoneNext,
+
+      onFinishClose,
+      onFinishHistory,
+
+      onOpenDetail,
+      onBackToHistory,
+      onCopySummary,
+      onRequestDeleteCurrent,
+      onRequestClearAllData,
+
+      // CORREÇÃO AQUI: O callback do botão de tema estava faltando!
+      onToggleTheme, 
+
+      onCloseModal: () => app.ui?.closeModal()
+    });
+
+    // 3. Vai para a Home
+    goHome();
+
+    console.log("Sistema pronto.");
+  } catch (error) {
+    console.error("Erro fatal na inicialização:", error);
+    alert("Erro ao iniciar o app. Tente limpar o cache.");
+  }
+}
+
+/* =========================
+   LÓGICA DE COMPARTILHAMENTO
+========================= */
 function onConfirmSend(choice) {
   if (choice === "none") return;
   if (!app.currentDetailId) return;
@@ -110,7 +126,6 @@ function onConfirmSend(choice) {
 
   const text = buildWhatsAppText(record);
 
-  // ✅ Preferência moderna (PWA / mobile)
   if (navigator.share) {
     navigator.share({
       text
@@ -119,22 +134,15 @@ function onConfirmSend(choice) {
     });
     return;
   }
-
-  // ✅ Fallback desktop / browsers antigos
   fallbackWhatsApp(text);
 }
 
 function fallbackWhatsApp(text) {
   const encoded = encodeURIComponent(text);
   const url = `https://wa.me/?text=${encoded}`;
-
   const opened = window.open(url, "_blank", "noopener,noreferrer");
-  if (!opened) {
-    window.location.href = url;
-  }
+  if (!opened) window.location.href = url;
 }
-
-
 
 /* =========================
    NAVEGAÇÃO PRINCIPAL
@@ -152,7 +160,12 @@ function goHome() {
 
 function goHistory() {
   app.ui.setNavCurrent("history");
-  const records = storage.getAll();
+  let records = [];
+  try {
+    records = storage.getAll();
+  } catch (e) {
+    console.error("Erro ao ler histórico", e);
+  }
   app.ui.renderHistory(records);
   app.ui.showScreen(SCREENS.HISTORY);
 }
@@ -191,8 +204,6 @@ function createEmptyCheckin() {
     clarity_answer: null,
     micro_pause: null,
     deleted: false,
-
-    // controle interno
     save_text: true,
     _draft_text: ""
   };
@@ -239,11 +250,8 @@ function onClearDump() {
 
 function onDumpNext() {
   if (!app.flow) return;
-
   const cleaned = safeTrim(app.flow._draft_text);
-  app.flow.text =
-    app.flow.save_text && cleaned ? cleaned : null;
-
+  app.flow.text = app.flow.save_text && cleaned ? cleaned : null;
   app.ui.renderClarity(app.flow);
   app.ui.showScreen(SCREENS.CLARITY);
 }
@@ -285,23 +293,19 @@ function onPickPause(pause) {
 
 function onPauseNext() {
   if (!app.flow || !app.flow.micro_pause) return;
-
   if (app.flow.micro_pause === "respirar") {
     startTimer(60, "Inspire… solte… só acompanha.");
     return;
   }
-
   if (app.flow.micro_pause === "pausa") {
     startTimer(120, "Só fique aqui. Sem tarefa.");
     return;
   }
-
   app.ui.showScreen(SCREENS.PAUSE_DONE);
 }
 
 function startTimer(seconds, text) {
   stopTimer();
-
   app.timer.total = seconds;
   app.timer.remaining = seconds;
   app.timer.text = text;
@@ -312,12 +316,10 @@ function startTimer(seconds, text) {
     remainingSeconds: seconds,
     text
   });
-
   app.ui.showScreen(SCREENS.TIMER);
 
   app.timer.id = setInterval(() => {
     app.timer.remaining--;
-
     if (app.timer.remaining <= 0) {
       stopTimer();
       app.ui.showScreen(SCREENS.PAUSE_DONE);
@@ -350,7 +352,6 @@ function onPauseDoneNext() {
 
 function finalizeAndSave() {
   if (!app.flow) return;
-
   storage.add({
     id: app.flow.id,
     created_at: app.flow.created_at,
@@ -361,7 +362,6 @@ function finalizeAndSave() {
     micro_pause: app.flow.micro_pause,
     deleted: false
   });
-
   app.flow = null;
 }
 
@@ -396,7 +396,6 @@ async function onCopySummary() {
   if (!record) return;
 
   const text = buildTherapySummary(record);
-
   try {
     await navigator.clipboard.writeText(text);
     app.ui.toast("Resumo copiado.");
@@ -407,7 +406,6 @@ async function onCopySummary() {
 
 function onRequestDeleteCurrent() {
   if (!app.currentDetailId) return;
-
   app.ui.openConfirmModal({
     title: "Deletar check-in?",
     message: "Esse registro será removido deste dispositivo.",
@@ -441,10 +439,8 @@ function onSendSomeone() {
   app.ui.openSendModal();
 }
 
-
 function buildWhatsAppText(record) {
   const lines = [];
-
   lines.push("Resumo de um check-in pessoal");
   lines.push("(feito no app Pausa Interna)");
   lines.push("");
@@ -453,16 +449,63 @@ function buildWhatsAppText(record) {
   if (record.theme) lines.push(`Tema: ${record.theme}`);
   lines.push(`Clareza: ${record.clarity_answer}`);
   if (record.micro_pause) lines.push(`Micro-pausa: ${record.micro_pause}`);
-
   if (record.text) {
     lines.push("");
     lines.push("Descarrego:");
     lines.push(record.text);
   }
-
   lines.push("");
   lines.push("Compartilho isso porque confio em você.");
   lines.push("Não precisa responder agora.");
-
   return lines.join("\n");
+}
+
+/* =========================
+   GERENCIAMENTO DE TEMA
+========================= */
+function applyInitialTheme() {
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    
+    if (saved === "light") {
+      setTheme("light");
+    } else if (saved === "dark") {
+      setTheme("dark");
+    } else {
+      // Padrão Dark
+      setTheme("dark");
+    }
+  } catch (e) {
+    console.warn("Erro ao ler tema, usando padrão.", e);
+    setTheme("dark");
+  }
+}
+
+// Esta função deve ser chamada quando o botão da UI for clicado
+function onToggleTheme() {
+  const current = getTheme();
+  const next = current === "light" ? "dark" : "light";
+  
+  setTheme(next);
+  
+  try {
+    localStorage.setItem(THEME_KEY, next);
+  } catch(e) {}
+}
+
+function getTheme() {
+  return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+}
+
+function setTheme(mode) {
+  if (mode === "light") {
+    document.documentElement.setAttribute("data-theme", "light");
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+  }
+
+  // Atualiza label do botão na UI se disponível
+  if (app.ui && app.ui.setThemeLabel) {
+    app.ui.setThemeLabel(mode);
+  }
 }
